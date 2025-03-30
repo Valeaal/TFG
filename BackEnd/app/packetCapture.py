@@ -1,9 +1,8 @@
-import queue
-import threading
+import multiprocessing
 from scapy.all import sniff, Packet, IP
+from .shared import packetBuffer, packetBufferLock
 from .loadDefenseAlgorithms import getDefenseAlgorithmNames
 
-packetBuffer = queue.Queue()
 defenseAlgorithmsNames = getDefenseAlgorithmNames()
 
 def packetCapture(socketio):
@@ -11,7 +10,8 @@ def packetCapture(socketio):
     
     def process_packet(packet):
         indexedPacket = PacketIndexed(packet, defenseAlgorithmsNames)
-        packetBuffer.put(indexedPacket)
+        with packetBufferLock:
+            packetBuffer.append(indexedPacket)
         # print("Paquete tipo " + str(indexedPacket.get_last_layer()) + " IP origen: " + (indexedPacket.packet[IP].src if indexedPacket.packet.haslayer(IP) else "No IP"))       
         socketio.emit('packet_layer_info', {'last_layer': indexedPacket.get_last_layer()})
 
@@ -22,7 +22,7 @@ class PacketIndexed:
     def __init__(self, packet, defenseAlgorithms):
         self.packet = packet
         self.processed = {name: 0 for name in defenseAlgorithms}
-        self.lock = threading.Lock()
+        self.lock = multiprocessing.Lock()
 
     def mark_processed(self, filter_name):
         # Marca el filtro como procesado para este paquete

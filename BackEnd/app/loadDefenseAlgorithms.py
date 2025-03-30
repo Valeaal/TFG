@@ -1,6 +1,6 @@
 import os
-import threading
 import importlib.util
+import multiprocessing
 
 # Ruta donde se encuentran los algoritmos de defensa
 defenseAlgorithmsPath = "./app/defenseAlgorithms"
@@ -13,26 +13,28 @@ def getDefenseAlgorithmNames():
 
 
 def loadDefenseAlgorithms(path=defenseAlgorithmsPath):
+    
+    if __name__ == '__main__':
 
-    # print("Cargando algoritmos de defensa...")
-    global algorithm_names
-    algorithms.clear()
+        # print("Cargando algoritmos de defensa...")
+        global algorithm_names
+        algorithms.clear()
 
-    for fileName in os.listdir(path):
-        if fileName.endswith(".py"):  # Solo archivos .py
-            moduleName = fileName[:-3]  # Nombre del módulo sin extensión
-            modulePath = os.path.join(path, fileName)
-            spec = importlib.util.spec_from_file_location(moduleName, modulePath)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+        for fileName in os.listdir(path):
+            if fileName.endswith(".py"):  # Solo archivos .py
+                moduleName = fileName[:-3]  # Nombre del módulo sin extensión
+                modulePath = os.path.join(path, fileName)
+                spec = importlib.util.spec_from_file_location(moduleName, modulePath)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
 
-            if hasattr(module, "detect"):
-                algorithms[moduleName] = module
-                # print(f"✅ {fileName} cargado correctamente.")
-                moduleThread = threading.Thread(target=module.detect, daemon=True)
-                moduleThread.start()
-            else:
-                print(f"⚠️ {fileName} no contiene una función `detect`.")
+                if hasattr(module, "detect"):
+                    algorithms[moduleName] = module
+                    # print(f"✅ {fileName} cargado correctamente.")
+                    moduleProcess = multiprocessing.Process(target=module.detect, daemon=True)
+                    moduleProcess.start()
+                else:
+                    print(f"⚠️ {fileName} no contiene una función `detect`.")
 
 def startModule(algorithm_name):
     if algorithm_name in algorithms:

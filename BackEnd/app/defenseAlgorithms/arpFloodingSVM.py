@@ -5,7 +5,7 @@ import warnings
 import numpy as np
 from app import attackNotifier
 from scapy.layers.l2 import ARP, Ether
-from app.packetCapture import packetBuffer
+from shared import packetBuffer, packetBufferLock
 
 
 ALGORITHM_NAME = os.path.basename(__file__).replace('.py', '')
@@ -76,13 +76,15 @@ def detect():
 
     global running
 
-    with packetBuffer.mutex:
-        current_packet = packetBuffer.queue[0]
+    current_packet = None
     while current_packet == None:
-        time.sleep(0.5)
         try:
-            with packetBuffer.mutex:
-                current_packet = packetBuffer.queue[0]
+            with packetBufferLock:
+                if len(packetBuffer) > 0:
+                    current_packet = packetBuffer[0]
+                else:
+                    current_packet = None
+                    time.sleep(0.5)
         except:
             current_packet == None
             
@@ -115,9 +117,9 @@ def detect():
 
         # Asignacion normal del siguiente indice:
         # Actualizamos siempre el indice del paquete actual, por si el cleaner ha limpiado el buffer y cambiado los mismos.
-        with packetBuffer.mutex:
-            current_index = packetBuffer.queue.index(current_packet)
-            remaining_packets = len(packetBuffer.queue) - (current_index + 1)
+        with packetBufferLock:
+            current_index = packetBuffer.index(current_packet)
+            remaining_packets = len(packetBuffer) - (current_index + 1)
         
         # Si hemos acabado con el buffer:
         # El ultimo paquete no se marca como analizado para no perder la referencia del indice.
@@ -125,11 +127,11 @@ def detect():
         # Como tenemos aun tendremos un elemento, podemos usarlo para hallar el nuevo indice y a partir de ahi seguir.
         while remaining_packets == 0:
             time.sleep(0.5)                
-            with packetBuffer.mutex:
-                current_index = packetBuffer.queue.index(current_packet)
-                remaining_packets = len(packetBuffer.queue) - (current_index + 1)
+            with packetBufferLock:
+                current_index = packetBuffer.index(current_packet)
+                remaining_packets = len(packetBuffer) - (current_index + 1)
         
-        next_packet = packetBuffer.queue[current_index + 1]
+        next_packet = packetBuffer[current_index + 1]
 
         #Cuando ya se ha actualizado el indice de forma segura con el siguiente paquete a analizar
         current_packet.mark_processed(ALGORITHM_NAME)

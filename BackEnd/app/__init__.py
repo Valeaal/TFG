@@ -1,5 +1,4 @@
-import threading
-
+import multiprocessing
 
 from flask import Flask
 from flask_cors import CORS
@@ -32,8 +31,8 @@ def createApp():
 
     # Hilo de captura de paquetes
 
-    captureThread = threading.Thread(target=packetCapture, args=(socketio,), daemon=True)
-    captureThread.start()
+    captureProcess = multiprocessing.Process(target=packetCapture, args=(socketio,), daemon=True)
+    captureProcess.start()
 
     # Cargar algoritmos de defensa
     loadDefenseAlgorithms()
@@ -42,11 +41,12 @@ def createApp():
     loadAttackTests()
 
     # Envio constante del estado del buffer al frontend
-    bufferMonitorThread = threading.Thread(target=bufferMonitor, args=(socketio,), daemon=True)
-    bufferMonitorThread.start()
+    bufferMonitorProcess = multiprocessing.Process(target=bufferMonitor, args=(socketio,), daemon=True)
+    bufferMonitorProcess.start()
 
     # Hilo de limpieza del buffer
-    cleanerThread = threading.Thread(target=bufferCleaner, daemon=True)
-    cleanerThread.start()
+    cleanerProcess = multiprocessing.Process(target=bufferCleaner, daemon=True)
+    cleanerProcess.start()
 
     return app
+
