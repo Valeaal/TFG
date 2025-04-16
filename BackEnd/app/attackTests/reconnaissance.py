@@ -31,6 +31,7 @@ def attack():
     global running
 
     targetIp = getLocalIp()
+    
 
     try:
         while True:
