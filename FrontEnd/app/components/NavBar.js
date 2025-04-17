@@ -170,7 +170,7 @@ export default function NavBar() {
                     description="Denegación de servicio abriendo demasiadas conexiones TCP"
                   />
                   <ListItemWithSwitch 
-                    title="na" 
+                    title="icmp" 
                     description="na"
                   />
                   <ListItemWithSwitch 
